@@ -1,0 +1,179 @@
+---
+title: "Dollar Dilemma: Exploring interplay of Happiness and Income"
+author:
+  - name: Bhargav Prajapati
+    affil: 1
+    Github: github.com/idylliq
+    email: bp1702a@american.edu
+    main: true
+affiliation:
+  - num: 1
+    address: School Of International Service, American University
+output: 
+  posterdown::posterdown_html:
+    self_contained: true
+    pandoc_args: --mathjax
+    highlight: haddock
+    number_sections: false
+link-citations: true
+---
+
+```{r, include=FALSE}
+knitr::opts_chunk$set(results = 'asis',
+                      echo = FALSE,
+                      warning = FALSE,
+                      tidy = FALSE,
+                      message = FALSE,
+                      fig.align = 'center',
+                      out.width = "100%")
+options(knitr.table.format = "html") 
+```
+
+# Introduction
+
+**"Does income affect the happiness level of countries?"**
+
+This research question has been a subject of interest for many scholars and policymakers as it pertains to the overall well-being of societies. Many studies have been conducted to determine whether there is a direct correlation between a country's income level and the level of happiness among its citizens. Through my research, I have attempted to shed light on this topic and explore the the correlation between income and happiness at country level. 
+
+## **Expectation**
+
+- The relationship between income and happiness has been a subject of much research and debate in the field of economics and psychology. One of the most commonly held assumptions is that higher income levels will positively affect the level of happiness in a country. This assumption is based on the belief that individuals who have access to more resources and material wealth will be able to satisfy their needs and desires more easily, leading to greater levels of life satisfaction and happiness.
+
+- Several studies have provided evidence to support this idea. For example, a study conducted by the World Happiness Report found a strong positive correlation between a country's GDP per capita and the overall happiness level of its citizens. Similarly, a study by the Pew Research Center found that individuals with higher incomes reported higher levels of life satisfaction compared to those with lower incomes.
+
+- Thus, we would expect a **positive relationship** between **income and happiness**. 
+
+## **Importance**
+- The study will help in understanding the extent to which Income tends to influence happiness in societies. It will take other confounding factors into consideration. This Research will suggest that while an increase in income can lead to an increase in happiness, other factors such as social relationships, health, and accountability also play a significant role in determining happiness levels. 
+
+
+# Data And Methodology
+- **Data set used:** The World Happiness Index data set
+ 
+- **Originally Compiled by:** The Sustainable Development Solutions Network
+
+- **What it shows?:** The subjective well-being of individuals, includes information on various determinants of happiness for example: income,  Life expectancy, and Perceptive extent of corruption.
+
+# **Variables of Interest**
+
+```{r dataclean, include=FALSE, collapse=TRUE}
+library(posterdown)
+library(ggrepel)
+library(tidyverse)
+library(psych)
+
+whp = read_csv('WHR2023.csv')
+whp = tibble::rowid_to_column(whp, "rank")
+
+whp = whp %>% 
+  rename("lgdp" = "Logged GDP per capita")
+whp = whp %>% 
+  rename("country" = "Country name")
+whp = whp %>% 
+  rename("score" = "Ladder score")
+whp = whp %>% 
+  rename("social_support" = "Social support")
+whp = whp %>% 
+  rename("life_expectancy" = "Healthy life expectancy")
+whp = whp %>% 
+  rename("corruption" = "Perceptions of corruption")
+
+whp1 = whp %>%
+  mutate(state = as.character(country))
+whp1[whp1 == "United Kingdom"] <- "UK"
+whp1[whp1 == "United States"] <- "US"
+
+countrylist = c("Finland", "India", "UK", "US", "Iceland", "Afghanistan", "Venenzuela", "Lebanon", "Botswana", "Malawi", "Togo", "Zimbabwe", "Mozambique", "Sri Lanka", "China", "Armenia")
+
+whp1 = whp1 %>%
+  mutate(state = ifelse(state %in% countrylist, state, ""))
+```
+
+**Logged GDP Per capita**: Explanatory variable
+- Adjusted for inflation and population
+- Helps to reduce the influence of extreme values
+
+**WHI Score**: Outcome Variable
+- Population perception survey on scale of 0 to 10
+- Factors weighted for their importance 
+
+```{r summary}
+whp2 = whp1 %>%
+  select(lgdp, score) %>% 
+  summarise_each(funs(min = min, 
+                      q25 = quantile(., 0.25), 
+                      median = median, 
+                      q75 = quantile(., 0.75), 
+                      max = max,
+                      mean = mean, 
+                      sd = sd))
+
+library(tidyr)
+
+whp3 = whp2%>% gather(stat, val) %>%
+  separate(stat, into = c("var", "stat"), sep = "_") %>%
+  spread(stat, val) %>%
+  select(var, min, q25, median, q75, max, mean, sd) 
+
+knitr::kable(whp3, format = "html")
+```
+
+**_Some picture time!_**
+
+```{r scatterplot}
+
+ggplot(whp1, aes(lgdp, score)) +
+  geom_point(aes(fill= ..x..),  
+             shape=24,       
+             size=2,
+             show.legend = FALSE) + 
+  scale_fill_gradient2(low="red",
+                       mid="lightblue",
+                       high = "green",
+                       midpoint = 10)+
+  geom_smooth(color='black',   
+              linetype=2,   
+              lwd=1,         
+              se=FALSE) +
+  geom_text_repel(aes(label=state)) +
+  scale_x_discrete(limit = c(6,7,8,9,10,11,12))+
+  labs(y ='WHI Score',  
+       x ='Logged Per Capita GDP',
+       title='More Dollar = More Happy?') +
+  theme_minimal()
+```
+
+- The graph shows a positive relationship between higher per capita GDP and happiness level.
+
+- Countries with higher GDP per capita, such as Finland and Denmark tend to have higher levels of happiness. 
+
+- Lower income countries like Afghanistan, Malawi, Chad and Liberia tend to have lower levels of happiness.
+
+- Middle income countries (Usually developing economies like India, China, Mexico) are relatively more happier. 
+
+**_Are you HAPPY with that Statistics?_**
+
+- Null Hypothesis: Income **do not** affect happiness.
+
+- In Model 1, we assume that only one variable i.e. Logged per capita GDP ENTIRELY explains the variation in World Happiness Index score. So we perform a bivariate regression. 
+
+- In Model 2 We perform a multiple regression analysis to understand the effect of income on happiness taking into consideration other factors like Social support, perception of corruption and life expectancy in account
+
+
+```{r test}
+library(jtools)
+library(huxtable)
+t1 = lm(score~lgdp,whp1)
+t2 = lm(score~lgdp+social_support+life_expectancy+corruption,whp1)
+
+export_summs(t1,t2, scale = TRUE,
+             error_format = "[{conf.low}, {conf.high}]")
+```
+# Results
+- **In Model 1, the income (i.e. per capita GDP) positively affects happiness score of a country (Beta = 0.89). And that result is statistically significant at 0.001 level**
+
+- **Model 2 takes other confounding factors into account. we find that although income still positively affects happiness score but the magnitude by which it affects the income has went down. I.e. the value of beta has fallen to 0.24. This result is statistically significant at 0.01 level and we reject the null hypothesis.**
+
+- Thus, although an increase in income increases the happiness perception of people and makes a country happy overall, the other factors that affects happiness must also be taken into consideration.
+
+- To engineer a generally happy population, policymakers should consider implementing policies that address not only economic prosperity but also social relationships, health, and personal values. By addressing these factors, policymakers can help create a more fulfilling and satisfying life for their citizens, leading to a generally happier population.
