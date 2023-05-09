@@ -19,9 +19,9 @@ psych
 
 Once you have installed these packages, you can open the Dollardilemma.Rmd file in RStudio and click on the "Knit" button to create the poster.
 
-License
+## License
 This project is licensed under the MIT License - see the LICENSE.md file for details.
 
-Acknowledgments
+## Acknowledgments
 The posterdown package, created by Yihui Xie and Yixuan Qiu
 The World Happiness Report, produced by the United Nations Sustainable Development Solutions Network
