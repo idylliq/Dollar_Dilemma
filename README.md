@@ -12,10 +12,10 @@ posterdown is an R package that allows you to create scientific posters using R 
 ## Reproducing the Poster
 To reproduce the poster, you will need to have R and RStudio installed on your computer. You will also need to install the following packages:
 
-tidyverse
-posterdown
-ggrepel
-psych
+`tidyverse`
+`posterdown`
+`ggrepel`
+`psych`
 
 Once you have installed these packages, you can open the Dollardilemma.Rmd file in RStudio and click on the "Knit" button to create the poster.
 
